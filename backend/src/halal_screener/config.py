@@ -17,6 +17,10 @@ class Settings(BaseSettings):
 
     EODHD_API_KEY: str = ""
 
+    # How long a cached FinancialRatios row (by `fetched_at`) is trusted
+    # before a live re-fetch is triggered for that ticker.
+    FUNDAMENTALS_TTL_HOURS: int = 24
+
 
 @lru_cache
 def get_settings() -> Settings:

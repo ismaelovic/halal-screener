@@ -5,12 +5,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DisclaimerFooter } from "../src/components/DisclaimerFooter";
 import { SearchBar } from "../src/components/SearchBar";
+import { useDebouncedValue } from "../src/hooks/useDebouncedValue";
 import { useCompanySearchQuery } from "../src/hooks/useScreeningQuery";
+
+const SEARCH_DEBOUNCE_MS = 400;
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
   const router = useRouter();
-  const { data: results, isLoading, isError } = useCompanySearchQuery(query);
+  const { data: results, isLoading, isError } = useCompanySearchQuery(debouncedQuery);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -21,9 +25,10 @@ export default function SearchScreen() {
 
         {isLoading && <Text style={styles.status}>Searching…</Text>}
         {isError && <Text style={styles.status}>Something went wrong. Try again.</Text>}
-        {!isLoading && query.trim().length > 0 && (results?.length ?? 0) === 0 && (
-          <Text style={styles.status}>No matching companies in the seeded list.</Text>
+        {!isLoading && debouncedQuery.trim().length > 0 && (results?.length ?? 0) === 0 && (
+          <Text style={styles.status}>No matching companies found.</Text>
         )}
+
 
         <FlatList
           data={results ?? []}

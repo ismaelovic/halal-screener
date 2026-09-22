@@ -32,11 +32,12 @@ def test_unknown_company_returns_404(client, seeded_session: Session):
     assert response.status_code == 404
 
 
-def test_known_company_without_screening_result_returns_404(client, session: Session):
+def test_company_without_cached_screening_triggers_live_fetch(client, session: Session):
     from halal_screener.models import Company
 
     session.add(Company(ticker="NOSCREEN", exchange="US", name="No Screening Yet"))
     session.commit()
 
     response = client.get("/api/companies/NOSCREEN.US/screening")
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json()["verdict"] == "halal"
