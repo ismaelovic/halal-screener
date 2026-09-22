@@ -1,0 +1,45 @@
+{
+  "General": {
+    "Code": "AAPL",
+    "Name": "Apple Inc",
+    "Exchange": "US",
+    "CountryName": "USA",
+    "CurrencyCode": "USD",
+    "Sector": "Technology",
+    "Industry": "Consumer Electronics",
+    "ISIN": "US0378331005"
+  },
+  "Highlights": {
+    "MarketCapitalization": 3500000000000
+  },
+  "Financials": {
+    "Balance_Sheet": {
+      "yearly": {
+        "2024-09-30": {
+          "date": "2024-09-30",
+          "cash": 29943000000,
+          "longTermDebt": 85750000000,
+          "shortLongTermDebt": 10912000000
+        },
+        "2023-09-30": {
+          "date": "2023-09-30",
+          "cash": 29965000000,
+          "longTermDebt": 95281000000,
+          "shortLongTermDebt": 9822000000
+        }
+      }
+    },
+    "Income_Statement": {
+      "yearly": {
+        "2024-09-30": {
+          "date": "2024-09-30",
+          "totalRevenue": 391035000000
+        },
+        "2023-09-30": {
+          "date": "2023-09-30",
+          "totalRevenue": 383285000000
+        }
+      }
+    }
+  }
+}

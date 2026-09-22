@@ -1,0 +1,23 @@
+## Python (backend)
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+*.db
+
+## Node / Expo (frontend)
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+## Env files (never commit secrets)
+.env
+.env.local
+!.env.example
+
+## OS
+.DS_Store
