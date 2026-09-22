@@ -4,11 +4,15 @@ This is the only place that wires the pure `screening.engine` functions to
 the database — the engine itself stays DB-free and independently testable.
 """
 
+from datetime import datetime, timedelta, timezone
+
 from sqlmodel import Session, select
 
 from halal_screener.models import Company, FinancialRatios, ScreeningResult
+from halal_screener.providers.base import FundamentalsProvider
 from halal_screener.providers.schemas import RawFundamentals
 from halal_screener.screening.engine import ScreeningInput, screen_company
+from halal_screener.services.company_service import get_by_symbol
 
 
 def upsert_company(session: Session, fundamentals: RawFundamentals) -> Company:
@@ -97,3 +101,41 @@ def get_latest_screening(
         return None
 
     return result, ratios
+
+
+def is_stale(fetched_at: datetime, ttl_hours: int) -> bool:
+    """SQLite drops tzinfo on round-trip (Postgres may not), so normalize to
+    UTC-aware before comparing rather than assuming either.
+    """
+    aware_fetched_at = fetched_at if fetched_at.tzinfo else fetched_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - aware_fetched_at > timedelta(hours=ttl_hours)
+
+
+def get_or_fetch_screening(
+    session: Session,
+    provider: FundamentalsProvider,
+    ticker: str,
+    exchange: str,
+    ttl_hours: int,
+) -> tuple[Company, ScreeningResult, FinancialRatios]:
+    """Serves a cached screening result if one exists and isn't stale;
+    otherwise fetches live fundamentals, persists them, and re-screens.
+
+    Raises whatever `provider.get_fundamentals` raises on a cache miss/stale
+    hit — a `ValueError` means "not a real ticker" (see yfinance_provider),
+    anything else means the provider itself is unavailable. Both are left to
+    the caller (the API route) to translate into the right HTTP status.
+    """
+    company = get_by_symbol(session, f"{ticker}.{exchange}")
+    latest = get_latest_screening(session, company.id) if company else None
+
+    if company is None or latest is None or is_stale(latest[1].fetched_at, ttl_hours):
+        fundamentals = provider.get_fundamentals(ticker, exchange)
+        company = upsert_company(session, fundamentals)
+        result = screen_and_persist(session, company, fundamentals)
+        ratios = session.get(FinancialRatios, result.financial_ratios_id)
+        assert ratios is not None  # just written above
+        return company, result, ratios
+
+    result, ratios = latest
+    return company, result, ratios

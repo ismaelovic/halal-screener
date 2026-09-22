@@ -11,6 +11,10 @@ Caveat (unofficial API): this scrapes Yahoo Finance's undocumented endpoints
 via the `yfinance` package. It can break without notice if Yahoo changes
 their site. The full raw `.info` dict is stored in `raw_payload` so a broken
 field mapping can be fixed later without re-fetching.
+
+`search()` backs live company-name lookup for tickers outside the seed list
+(see `services/company_service.search_live`) — verified live against ~10
+target-market tickers before wiring it up (see ticket 5 plan).
 """
 
 from datetime import date, datetime, timezone
@@ -52,20 +56,32 @@ def _as_of_date(info: dict[str, Any]) -> date | None:
 
 class YFinanceProvider(FundamentalsProvider):
     def search(self, query: str) -> list[SearchResult]:
-        # Not used by the running app in V1 (company search only hits the
-        # local seeded table — see plan doc), kept only to satisfy the
-        # FundamentalsProvider interface. Yahoo's own exchange codes here
-        # (e.g. "CPH", "GER") are NOT translated to our internal exchange
-        # vocabulary since nothing consumes this path yet.
-        results = yf.Search(query, max_results=10).quotes
-        return [
-            SearchResult(
-                ticker=item.get("symbol", ""),
-                exchange=item.get("exchange", ""),
-                name=item.get("longname") or item.get("shortname", ""),
+        # Yahoo's own `exchange` field (e.g. "CPH", "GER", "OSL") uses a
+        # different vocabulary than our internal exchange codes and is
+        # intentionally ignored here. Verified live: the `symbol` field
+        # (e.g. "NOVO-B.CO", "SAP.DE", "DGE.L") already uses our exact
+        # ticker+suffix convention, so we derive (ticker, exchange) by
+        # splitting it ourselves — same convention as `_to_yahoo_symbol`.
+        # Non-equity results (currencies, futures, ETFs) are filtered out.
+        quotes = yf.Search(query, max_results=10).quotes
+        results = []
+        for item in quotes:
+            if item.get("quoteType") != "EQUITY":
+                continue
+            symbol = item.get("symbol", "")
+            if not symbol:
+                continue
+            ticker, dot, exchange = symbol.rpartition(".")
+            if not dot:
+                ticker, exchange = symbol, _US_EXCHANGE_CODE
+            results.append(
+                SearchResult(
+                    ticker=ticker,
+                    exchange=exchange,
+                    name=item.get("longname") or item.get("shortname") or "",
+                )
             )
-            for item in results
-        ]
+        return results
 
     def get_fundamentals(self, ticker: str, exchange: str) -> RawFundamentals:
         symbol = _to_yahoo_symbol(ticker, exchange)
