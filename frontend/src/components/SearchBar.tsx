@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 
 interface SearchBarProps {
   value: string;
@@ -11,12 +12,19 @@ export function SearchBar({ value, onChangeText, placeholder }: SearchBarProps) 
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={[styles.container, focused && styles.containerFocused]}>
+    <View
+      className={`flex-row items-center gap-2 rounded-full bg-surface px-4 h-14 border ${
+        focused ? "border-white/40" : "border-white/10"
+      }`}
+    >
+      <Ionicons name="search" size={20} color="#8A93A6" />
       <TextInput
-        style={styles.input}
+        className="flex-1 text-white text-base"
+        style={{ outlineStyle: "none" } as never}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder ?? "Search a ticker or company name…"}
+        placeholderTextColor="#8A93A6"
         autoCapitalize="none"
         autoCorrect={false}
         onFocus={() => setFocused(true)}
@@ -25,20 +33,3 @@ export function SearchBar({ value, onChangeText, placeholder }: SearchBarProps) 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
-  },
-  containerFocused: {
-    borderColor: "#3a7d44",
-  },
-  input: {
-    height: 44,
-    fontSize: 16,
-  },
-});

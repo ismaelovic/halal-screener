@@ -1,11 +1,16 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { Text, View } from "react-native";
 
 import type { Verdict } from "../api/types";
 
-const VERDICT_COPY: Record<Verdict, { label: string; color: string; background: string }> = {
-  halal: { label: "Halal", color: "#1b5e20", background: "#e3f6e5" },
-  haram: { label: "Haram", color: "#8c1d1d", background: "#fbe4e4" },
-  questionable: { label: "Questionable", color: "#8a6d00", background: "#fdf3d8" },
+const VERDICT_COPY: Record<
+  Verdict,
+  { label: string; colors: [string, string]; icon: keyof typeof Ionicons.glyphMap }
+> = {
+  halal: { label: "Halal", colors: ["#1FBE7A", "#0E8F5C"], icon: "checkmark-circle" },
+  haram: { label: "Haram", colors: ["#FF5A75", "#D6294B"], icon: "close-circle" },
+  questionable: { label: "Questionable", colors: ["#FFB020", "#E08E00"], icon: "help-circle" },
 };
 
 interface VerdictCardProps {
@@ -18,32 +23,17 @@ export function VerdictCard({ name, ticker, verdict }: VerdictCardProps) {
   const copy = VERDICT_COPY[verdict];
 
   return (
-    <View style={[styles.container, { backgroundColor: copy.background }]}>
-      <Text style={styles.ticker}>{ticker}</Text>
-      <Text style={styles.name}>{name}</Text>
-      <Text style={[styles.verdict, { color: copy.color }]}>{copy.label}</Text>
-    </View>
+    <LinearGradient
+      colors={copy.colors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ borderRadius: 24 }}
+      className="items-center py-8 px-6 gap-2"
+    >
+      <Ionicons name={copy.icon} size={72} color="white" />
+      <Text className="text-white text-2xl font-extrabold mt-2">{copy.label}</Text>
+      <Text className="text-white text-lg font-semibold mt-1">{name}</Text>
+      <Text className="text-white/80 text-sm">{ticker}</Text>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-    gap: 4,
-  },
-  ticker: {
-    fontSize: 14,
-    color: "#555",
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  verdict: {
-    fontSize: 28,
-    fontWeight: "800",
-    marginTop: 8,
-  },
-});

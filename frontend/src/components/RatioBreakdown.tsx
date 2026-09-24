@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import type { BusinessActivity, RatioBreakdown as RatioBreakdownType } from "../api/types";
+import { RatioGauge } from "./RatioGauge";
 
 interface RatioBreakdownProps {
   businessActivity: BusinessActivity;
@@ -9,9 +10,11 @@ interface RatioBreakdownProps {
   flaggedReasons: string[];
 }
 
-function formatPct(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
-}
+const STATUS_COPY: Record<BusinessActivity["status"], { label: string; passed: boolean }> = {
+  compliant: { label: "Compliant sector", passed: true },
+  non_compliant: { label: "Non-compliant sector", passed: false },
+  review: { label: "Needs manual review", passed: false },
+};
 
 export function RatioBreakdown({
   businessActivity,
@@ -19,27 +22,39 @@ export function RatioBreakdown({
   cashRatio,
   flaggedReasons,
 }: RatioBreakdownProps) {
+  const status = STATUS_COPY[businessActivity.status];
+
   return (
-    <View style={styles.container}>
-      <Row
-        label="Business activity"
-        value={businessActivity.status.replace("_", " ")}
-        passed={businessActivity.status === "compliant"}
-      />
-      <Row
-        label={`Debt ratio (< ${formatPct(debtRatio.threshold)})`}
-        value={formatPct(debtRatio.value)}
-        passed={debtRatio.passed}
-      />
-      <Row
-        label={`Cash ratio (< ${formatPct(cashRatio.threshold)})`}
-        value={formatPct(cashRatio.value)}
-        passed={cashRatio.passed}
-      />
+    <View className="bg-surface rounded-3xl p-5 gap-5">
+      <View
+        className={`self-start rounded-full px-4 py-2 ${
+          status.passed ? "bg-halal-end/30" : "bg-haram-end/30"
+        }`}
+      >
+        <Text className={`text-sm font-semibold ${status.passed ? "text-halal-start" : "text-haram-start"}`}>
+          {status.label}
+        </Text>
+      </View>
+
+      <View className="flex-row justify-around">
+        <RatioGauge
+          label="Debt ratio"
+          value={debtRatio.value}
+          threshold={debtRatio.threshold}
+          passed={debtRatio.passed}
+        />
+        <RatioGauge
+          label="Cash ratio"
+          value={cashRatio.value}
+          threshold={cashRatio.threshold}
+          passed={cashRatio.passed}
+        />
+      </View>
+
       {flaggedReasons.length > 0 && (
-        <View style={styles.reasons}>
+        <View className="gap-1">
           {flaggedReasons.map((reason) => (
-            <Text key={reason} style={styles.reasonText}>
+            <Text key={reason} className="text-muted text-sm">
               • {reason}
             </Text>
           ))}
@@ -48,43 +63,3 @@ export function RatioBreakdown({
     </View>
   );
 }
-
-function Row({ label, value, passed }: { label: string; value: string; passed: boolean }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, { color: passed ? "#1b5e20" : "#8c1d1d" }]}>{value}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 10,
-    padding: 16,
-    gap: 12,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  label: {
-    fontSize: 14,
-    color: "#333",
-    textTransform: "capitalize",
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  reasons: {
-    marginTop: 4,
-    gap: 4,
-  },
-  reasonText: {
-    fontSize: 13,
-    color: "#555",
-  },
-});
